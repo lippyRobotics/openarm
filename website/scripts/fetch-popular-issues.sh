@@ -14,11 +14,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -euo pipefail
+
 mkdir -p static/data
-gh issue list \
-  --repo enactic/openarm \
-  --search "is:issue state:open sort:reactions-+1-desc type:Feature reactions:>=1" \
-  --json author,number,reactionGroups,title,updatedAt,url \
-  --limit 20 | \
-    jq '[.[] | select(.reactionGroups[] | select(.content == "THUMBS_UP" and .users.totalCount > 0))] | .[0:5]' \
-      > static/data/popular-issues.json
+# "gh issue list" only works with a single repository, so we use the
+# GraphQL search API to collect issues across all enactic/* repositories.
+gh api graphql \
+  -f search='org:enactic is:issue state:open sort:reactions-+1-desc' \
+  -f query='
+query($search: String!) {
+  search(query: $search, type: ISSUE, first: 20) {
+    nodes {
+      ... on Issue {
+        author {
+          login
+          ... on User {
+            name
+          }
+        }
+        number
+        reactionGroups {
+          content
+          users {
+            totalCount
+          }
+        }
+        repository {
+          nameWithOwner
+        }
+        title
+        updatedAt
+        url
+      }
+    }
+  }
+}' | \
+    jq '[.data.search.nodes[] | select(.reactionGroups[] | select(.content == "THUMBS_UP" and .users.totalCount > 0))] | .[0:5]' \
+      > static/data/popular-issues.json.tmp
+mv static/data/popular-issues.json{.tmp,}

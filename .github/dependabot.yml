@@ -33,3 +33,14 @@ updates:
       docusaurus:
         patterns:
           - "@docusaurus/*"
+      eslint:
+        patterns:
+          - "@eslint-community/*"
+          - "@eslint/*"
+          - "@types/eslint*"
+          - "@typescript-eslint/*"
+          - "eslint*"
+          - "typescript-eslint*"
+      react:
+        patterns:
+          - "react*"

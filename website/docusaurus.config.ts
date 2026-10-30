@@ -1,4 +1,4 @@
-// Copyright 2025 Enactic, Inc.
+// Copyright 2025-2026 Enactic, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,11 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {themes as prismThemes} from 'prism-react-renderer';
-import type {Config} from '@docusaurus/types';
+import { themes as prismThemes } from 'prism-react-renderer';
+import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
+import fs from 'fs';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
+
+function loadPopularIssues() {
+  const popularIssuesPath = 'static/data/popular-issues.json';
+  if (fs.existsSync(popularIssuesPath)) {
+    return JSON.parse(fs.readFileSync(popularIssuesPath).toString());
+  } else {
+    // If you need popular issues, please run: npm run fetch-popular-issues
+    return [];
+  }
+}
 
 const config: Config = {
   title: 'OpenArm',
@@ -59,6 +70,19 @@ const config: Config = {
           remarkPlugins: [require('remark-math')],
           rehypePlugins: [require('rehype-katex')],
           showLastUpdateTime: true,
+
+          // Versioning.
+          lastVersion: 'current',
+          versions: {
+            current: {
+              label: '2.0',
+              // 2.0 is the default version, served at `/`.
+            },
+            '1.0': {
+              label: '1.0',
+              path: '1.0',
+            },
+          },
         },
         blog: {
           showReadingTime: true,
@@ -79,8 +103,57 @@ const config: Config = {
     ],
   ],
 
+  markdown: {
+    mermaid: true,
+    preprocessor: ({ filePath: _filePath, fileContent }) => {
+      return fileContent.replaceAll('{{OPENARM_CAN_VERSION}}', '1.2.2');
+    },
+  },
+
+  themes: ['@docusaurus/theme-mermaid'],
+
   plugins: [
     './src/plugins/csv-loader/index.ts',
+    [
+      '@docusaurus/plugin-client-redirects',
+      {
+        redirects: [
+          { from: '/getting-started/contribute', to: '/overview/contribute' },
+          { from: '/getting-started/project-overview', to: '/' },
+          { from: '/getting-started/safety-guide', to: '/overview/safety-guide' },
+          { from: '/1.0/purchase', to: '/purchase' },
+          // Setup pages moved under /setup/openarm-setup/ when KER Setup was added
+          { from: '/setup/motor-id', to: '/setup/openarm-setup/motor-id' },
+          { from: '/setup/can-setup', to: '/setup/openarm-setup/can-setup' },
+          { from: '/setup/configure-test', to: '/setup/openarm-setup/configure-test' },
+          { from: '/setup/motor-config', to: '/setup/openarm-setup/motor-config' },
+          { from: '/setup/run-demo', to: '/setup/openarm-setup/run-demo' },
+          { from: '/api-reference/setup', to: '/setup/openarm-setup' },
+          { from: '/api-reference/setup/motor-id', to: '/setup/openarm-setup/motor-id' },
+          { from: '/api-reference/setup/can-setup', to: '/setup/openarm-setup/can-setup' },
+          { from: '/api-reference/setup/configure-test', to: '/setup/openarm-setup/configure-test' },
+          { from: '/api-reference/setup/motor-config', to: '/setup/openarm-setup/motor-config' },
+          { from: '/api-reference/setup/run-demo', to: '/setup/openarm-setup/run-demo' },
+          { from: '/api-reference/setup/motor-firmware-update', to: '/setup/openarm-setup/motor-firmware-update' },
+          { from: '/tutorial/data-collection', to: '/tutorial/data-collection-vr' },
+          // The OpenArm Cell jig is replaced by the calibration with the mechanical limits
+          { from: '/hardware/openarm-cell/calibration-workflow', to: '/setup/openarm-setup/motor-config#zero-position-calibration-in-openarm-cell' }
+        ],
+        createRedirects(existingPath: string) {
+          const removedInV2 = [
+            '/1.0/hardware/assembly-guide',
+            '/1.0/hardware/bill-of-materials',
+            '/1.0/hardware/specifications',
+            '/1.0/hardware/wiring-and-casing-guide',
+            '/1.0/software',
+          ];
+          if (!removedInV2.some((path) => existingPath.startsWith(path))) {
+            return;
+          }
+          return [existingPath.replace(/^\/1\.0/, '')];
+        },
+      },
+    ],
   ],
 
   themeConfig: {
@@ -96,9 +169,16 @@ const config: Config = {
       items: [
         {
           type: 'docSidebar',
-          sidebarId: 'gettingStartedSidebar',
+          sidebarId: 'overviewSidebar',
           position: 'left',
-          label: 'Getting started',
+          label: 'Overview',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'tutorialSidebar',
+          position: 'left',
+          label: 'Tutorial',
+          docsVersions: ['current'],
         },
         {
           type: 'docSidebar',
@@ -108,32 +188,67 @@ const config: Config = {
         },
         {
           type: 'docSidebar',
+          sidebarId: 'setupSidebar',
+          position: 'left',
+          label: 'Setup',
+          docsVersions: ['current'],
+        },
+        {
+          type: 'docSidebar',
           sidebarId: 'softwareSidebar',
           position: 'left',
           label: 'Software',
+          docsVersions: ['1.0'],
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'apiReferenceSidebar',
+          position: 'left',
+          label: 'API Reference',
+          docsVersions: ['current'],
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'datasetSidebar',
+          position: 'left',
+          label: 'Dataset',
+          docsVersions: ['current'],
         },
         {
           type: 'docSidebar',
           sidebarId: 'teleopSidebar',
           position: 'left',
           label: 'Teleop',
+          docsVersions: ['1.0'],
         },
         {
           type: 'docSidebar',
           sidebarId: 'simulationSidebar',
           position: 'left',
           label: 'Simulation',
+          docsVersions: ['1.0'],
         },
         {
           type: 'docSidebar',
           sidebarId: 'purchaseSidebar',
           position: 'left',
           label: 'Purchase',
+          docsVersions: ['current'],
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'faqSidebar',
+          position: 'left',
+          label: 'FAQ',
         },
         // {to: '/blog', label: 'Blog', position: 'left'},
         {
           href: 'https://github.com/enactic/openarm',
           label: 'GitHub',
+          position: 'right',
+        },
+        {
+          type: 'docsVersionDropdown',
           position: 'right',
         },
       ],
@@ -145,28 +260,8 @@ const config: Config = {
           title: 'Docs',
           items: [
             {
-              label: 'Getting Started',
+              label: 'Overview',
               to: '/',
-            },
-            {
-              label: 'Hardware',
-              to: '/hardware/',
-            },
-            {
-              label: 'Software',
-              to: '/software/',
-            },
-            {
-              label: 'Teleop',
-              to: '/teleop/',
-            },
-            {
-              label: 'Simulation',
-              to: '/simulation/',
-            },
-            {
-              label: 'Purchase',
-              to: '/purchase/',
             },
           ],
         },
@@ -175,7 +270,7 @@ const config: Config = {
           items: [
             {
               label: 'Discord',
-              href: 'https://discord.gg/tpnKxHuJY3',
+              href: 'https://discord.gg/FsZaZ4z3We',
             },
             {
               label: 'X',
@@ -209,6 +304,10 @@ const config: Config = {
       indexName: 'OpenArm documents',
     },
   } satisfies Preset.ThemeConfig,
+
+  customFields: {
+    popularIssues: loadPopularIssues(),
+  },
 };
 
 export default config;

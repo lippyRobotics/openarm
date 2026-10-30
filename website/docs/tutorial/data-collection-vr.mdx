@@ -1,0 +1,144 @@
+---
+title: Data collection (VR)
+sidebar_position: 2
+---
+
+```mdx-code-block
+import BlockImage from '@site/src/components/BlockImage';
+```
+
+# Data collection with VR teleoperation
+
+## VR setup
+
+### One time setup for VR teleoperation
+
+Create a [Meta Quest Developer account](https://developers.meta.com/horizon/) and install [Meta Quest Developer Hub](https://developers.meta.com/horizon/documentation/unity/ts-mqdh/).
+
+Download the [teleoperation APK](https://drive.google.com/file/d/1lLDuoQAcl3YBKPE77F_1Z-8RzXEOFxpm/view?usp=drive_link).
+
+Sideload the APK onto your Quest 3 via Developer Hub.
+
+### Per-session setup
+
+1. Put on the headset and launch the teleoperation app. After the app is launched, you should see the following screen in the headset.
+   <BlockImage src="tutorial/data-collection-vr/in-vr-default.jpg" alt="Quest headset" width="90%" />
+
+2. Press the left controller menu button — a settings panel will appear.
+   <BlockImage src="tutorial/data-collection-vr/in-vr-setting.png" alt="VR menu" width="90%" />
+
+3. Enter the IP address of your PC host and the port (default: `5006`).
+
+4. Verify communication from the PC host:
+   `nc -lu 5006`
+
+   :::tip
+   If you don't see any incoming data, another remote control APK on the Quest may be interfering.
+   Try disabling other apps and check again.
+   :::
+
+5. Tape the center-of-eye sensor on the headset to keep it constantly activated (prevents the display from sleeping when worn at the neck).
+   Before taping the sensor:
+   <BlockImage src="tutorial/data-collection-vr/headset-uncover.png" alt="Headset sensor uncovered" width="90%" />
+
+   After taping the sensor:
+   <BlockImage src="tutorial/data-collection-vr/headset-covered.png" alt="Headset sensor covered" width="90%" />
+
+6. Take off the headset and hang it around your neck — you will operate with the controllers while the headset rests there.
+   <BlockImage src="tutorial/data-collection-vr/how-to-wear-headset.png" alt="Headset around neck" width="90%" />
+
+## Data collection in MuJoCo environment
+
+Even if you don't have the physical robot, you can still go through the data collection process using the MuJoCo environment.
+This will allow you to understand the data collection process and the data format before collecting the data on the real robot.
+Also, this section is useful for testing your VR teleoperation setup and to make sure that everything is working properly before collecting the data on the real robot.
+
+### Setup for MuJoCo environment
+
+Install the data collection software as described in [Installing the data collection software](./setup.mdx#installing-the-data-collection-software).
+
+If you have already cloned `dora-openarm-data-collection` without `--recurse-submodules`, run `git submodule update --init --recursive` in the repository to fetch the nodes.
+
+### Teleoperation in MuJoCo environment
+
+Run the following command in the `dora-openarm-data-collection` directory with the virtual environment activated.
+
+```bash
+LEADER=vr ROBOT=mujoco scripts/dora-envsubst run dataflow.yaml --uv
+```
+
+If VR teleoperation is working properly, you should see the robot arm moving in the MuJoCo environment when you operate the VR controllers.
+The same dataflow is used to collect data in MuJoCo.
+
+Open `http://localhost:8000` in your Web browser to check the data collection status in the data collection web UI.
+
+<BlockImage src="tutorial/data-collection-vr/mujoco-datacollection.gif" alt="MuJoCo teleoperation" />
+
+left: MuJoCo environment, right: data collection web UI
+
+### How to control data collection with VR controllers
+
+You can use button A and B on the right VR controller to control the data collection.
+
+<BlockImage src="tutorial/data-collection-vr/quest-controller-right.jpg" alt="Controller button" width="40%" />
+
+After the program starts, open `http://localhost:8000` to check the data collection status and control the data collection.
+
+<BlockImage src="tutorial/data-collection-vr/data-collection-start-quit.png" alt="UI top" width="80%" />
+When the web UI looks like the image above, you can start the data collection by pressing the A button on the right VR controller. This will start recording the data.
+
+* **A** : start recording
+* **B** : quit the program
+
+<BlockImage src="tutorial/data-collection-vr/data-collection-success-fail.png" alt="UI recording" width="80%" />
+
+when you start recording, the data collection will start.
+If you successfully complete the task, press the A button again to stop recording and mark the episode as success.
+If you fail the task, press the B button to stop recording and mark the episode as failure.
+
+* **A** : mark as success
+* **B** : mark as failure
+
+### Check the collected data
+
+The collected data is stored in `data/vr-mujoco` by default.
+If you want to change the data path, change the value of `DIRECTORY` of the `recorder` node in `dataflow.yaml`.
+
+```yaml
+- id: recorder
+  path: dora-openarm-dataset-recorder
+  env:
+    METADATA_FILE: "metadata_${ROBOT:-dummy}.yaml"
+    # Output directory for recorded datasets, e.g. data/webxr-mujoco.
+    DIRECTORY: "data/${LEADER:-dummy}-${ROBOT:-dummy}"
+```
+
+After finishing the data collection, you can check the collected data in the specified directory. The data will be stored in the OpenArmDataset format.
+
+If you don't have the real robot, skip the next section and move to the dataset format conversion section to convert the collected data to the LeRobot dataset format for training the policy.
+
+## Data collection on the real robot (Cell)
+
+:::info
+If you have the **OpenArm 2.0 alone without the cell**, use `ROBOT=pedestal` instead of `ROBOT=cell` in the following command. It doesn't need the lifter and the cameras, and only collects action and state data. The collected data is stored in `data/vr-pedestal` by default.
+:::
+
+First, make sure that the CAN interface is up and running and the cameras are set up properly, VR teleoperation is working. Then, run the following command to start the data collection.
+
+### Start data collection
+
+```bash
+LEADER=vr ROBOT=cell scripts/dora-envsubst run dataflow.yaml --uv
+```
+
+:::warning
+`ROBOT=cell` requires the lifter connected to can2, and the lifter moves for calibration right after the dataflow starts. Make sure nothing is in the way of the lifter before you run the command. See [CAN setup](./setup.mdx#can-setup).
+:::
+
+The collected data is stored in `data/vr-cell` by default. Same as the MuJoCo data collection, you can specify the output directory by modifying `DIRECTORY` of the `recorder` node in `dataflow.yaml`.
+
+If the command runs successfully, the arms will start. You need to align your VR controllers to the arm first by holding the trigger button.
+
+Once the alignment completes, you can fully control the arm with the VR controllers.
+You can move the lifter of the Cell up and down with the joystick on the left VR controller.
+If you want to stop the arms temporarily, press the **Pause Arm** button on the web UI (`http://localhost:8000`), and press the **Start Arm** button to start them again.

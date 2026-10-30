@@ -32,7 +32,7 @@ Core control logic is encapsulated in the `Control` class, which supports both:
 | **Fo** | Friction offset (bias correction) |
 
 
-### Friction compasation Model
+### Friction compensation Model
 
 The following tanh-based model is used for friction compensation:
 
@@ -51,7 +51,7 @@ cd openarm_teleop
 left_arm (default can bus is can1 can3)
 ```bash
 cd openarm_teleop
-./script/launch_bilateral.sh left_arm can1 can3
+./script/launch_unilateral.sh left_arm can1 can3
 ```
 
 ### Arguments
@@ -82,7 +82,7 @@ If the CAN interfaces are omitted, the script uses the following defaults:
 :::warning[Important Notes for Unilateral Control]
 - The **zero position** of the arm is defined as the posture where the arm is **lowered straight down**.
   Make sure the robot is in this position before starting control.
-
+  - When performing the zero position calibration, please run it for the leader arm and the follower arm separately, while they are in their independent states.
 - Unlike bilateral control, **unilateral control does not provide force feedback**.
   Be cautious when making contact with objects, as unexpected forces will not be reflected to the operator.
 :::

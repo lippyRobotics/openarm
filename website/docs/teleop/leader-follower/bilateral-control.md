@@ -62,8 +62,8 @@ cd openarm_teleop
 
 If the CAN interfaces are omitted, the script uses the following defaults:
 
-- For `right_arm`: leader = `can0`, follower = `can1`
-- For `left_arm`: leader = `can2`, follower = `can3`
+- For `right_arm`: leader = `can0`, follower = `can2`
+- For `left_arm`: leader = `can1`, follower = `can3`
 
 ### What the Script Does
 
@@ -82,6 +82,7 @@ If the CAN interfaces are omitted, the script uses the following defaults:
 :::warning[Important Notes for Bilateral Control]
 - The **zero position** of the arm is defined as the posture where the arm is **lowered straight down**.
   Make sure the robot is in this position before starting control.
+  - When performing the zero position calibration, please run it for the leader arm and the follower arm separately, while they are in their independent states.
 - Bilateral control requires a **high control frequency (500 Hz or higher)**.
   Ensure your system is capable of maintaining this rate in real time.
 - Improper **gain settings** may cause **oscillation or instability**.
